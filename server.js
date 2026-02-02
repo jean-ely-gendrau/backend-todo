@@ -6,6 +6,8 @@ import mysql from 'mysql2/promise';
 
 const app = express();
 
+app.use(express.json());
+
 // Create the connection to database
 const connection = await mysql.createConnection({
     host: 'localhost',
@@ -29,11 +31,30 @@ app.get('/api/todos', async (req, res) => {
         console.log(results); // results contains rows returned by server
         console.log(fields); // fields contains extra meta data about results, if available
 
-        res.json({ results: results }); // reponse au naviguateur
+        res.json({ results }); // reponse au naviguateur
     } catch (err) {
         console.log(err);
     }
 });
+
+app.post('/api/todos', async (req, res) => {
+    try {
+        const sql = 'INSERT INTO `todos`(`text`, `completed`) VALUES (?, ?)';
+
+        if (!req.body.text && !req.body.completed) throw new Error('Params invalid');
+
+        const values = [req.body.text, req.body.completed];
+
+        const [result, fields] = await connection.execute(sql, values);
+
+        console.log(result);
+        console.log(fields);
+
+        res.json({ response: `Tâche ajoutée avec succès` })
+    } catch (err) {
+        console.log(err);
+    }
+})
 
 const PORT = process.env.PORT || 5000;
 
