@@ -10,6 +10,10 @@ const app = express();
 // Middleware pour parser le JSON
 app.use(express.json());
 
+// TODO: Exercice 3 - Activer le middleware CORS
+// Utiliser le module cors déjà importé en haut du fichier
+
+
 // Connexion à la base de données MySQL
 const connection = await mysql.createConnection({
     host: 'localhost',
