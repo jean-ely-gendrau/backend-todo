@@ -12,7 +12,7 @@ app.use(express.json());
 
 // TODO: Exercice 3 - Activer le middleware CORS
 // Utiliser le module cors déjà importé en haut du fichier
-
+app.use(cors());
 
 // Connexion à la base de données MySQL
 const connection = await mysql.createConnection({
@@ -49,9 +49,10 @@ app.post('/api/todos', async (req, res) => {
             return res.status(400).json({ message: "Le champ 'text' est requis" });
         }
 
-        if (!req.body.completed) {
-            return res.status(400).json({ message: "Le champ 'completed' est requis" });
-        }
+        // Permettre l'envoi d'une tâche sans le champ completed qui est défini à false par défaut s'il n'est pas soumis dans la requête
+        // if (!req.body.completed) {
+        //     return res.status(400).json({ message: "Le champ 'completed' est requis" });
+        // }
 
         const values = [req.body.text, req.body.completed || false];
 
@@ -67,15 +68,54 @@ app.post('/api/todos', async (req, res) => {
     }
 });
 
-// TODO: Exercice 1 - Implémenter PUT /api/todos/:id
-// Modifier une tâche existante (text et/ou completed)
-// Utiliser req.params.id pour récupérer l'ID
-// SQL: UPDATE todos SET text = ?, completed = ? WHERE id = ?
+// PUT /api/todos/:id - Modifier une tâche existante
+app.put('/api/todos/:id', async (req, res) => {
+    try {
+        const sql = 'UPDATE `todos` SET `text` = ?, `completed` = ? WHERE `id` = ?';
 
-// TODO: Exercice 2 - Implémenter DELETE /api/todos/:id
-// Supprimer une tâche par son ID
-// Utiliser req.params.id pour récupérer l'ID
-// SQL: DELETE FROM todos WHERE id = ?
+        if (!req.body.text) {
+            return res.status(400).json({ message: "Le champ 'text' est requis" });
+        }
+
+        if (req.body.completed === undefined) {
+            return res.status(400).json({ message: "Le champ 'completed' est requis" });
+        }
+
+        const values = [req.body.text, req.body.completed, req.params.id];
+
+        const [result] = await connection.execute(sql, values);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Tâche non trouvée" });
+        }
+
+        res.json({
+            message: "Tâche modifiée avec succès",
+            data: { id: Number(req.params.id), text: req.body.text, completed: req.body.completed }
+        });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ message: "Erreur serveur", error: err.message });
+    }
+});
+
+// DELETE /api/todos/:id - Supprimer une tâche par son ID
+app.delete('/api/todos/:id', async (req, res) => {
+    try {
+        const sql = 'DELETE FROM `todos` WHERE `id` = ?';
+
+        const [result] = await connection.execute(sql, [req.params.id]);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "Tâche non trouvée" });
+        }
+
+        res.json({ message: "Tâche supprimée avec succès" });
+    } catch (err) {
+        console.log(err);
+        res.status(500).json({ message: "Erreur serveur", error: err.message });
+    }
+});
 
 // Démarrage du serveur
 const PORT = process.env.PORT || 5000;
